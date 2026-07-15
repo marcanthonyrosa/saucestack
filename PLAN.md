@@ -96,7 +96,7 @@ Run the `architect` subagent in design mode first. Then run it again in adversar
 
 Run for anything substantially new that isn't already an established pattern — novel interactions, new page types, agent-in-the-loop UIs, streaming, or anywhere stakeholder buy-in matters before the build. Skip only for a well-trodden pattern already in the style guide.
 
-`ux-prototyper` produces **2–3 meaningfully different HTML variants** + a comparison `index.html` in `specs/{feature}/prototype/`, inheriting `docs/{project-slug}/style-guide.md`. All states stacked: empty, loading, populated, error, optimistic. Run `/hallmark` on the leading variant to catch AI-slop before it hardens. The `style-guide-steward` owns the living style guide the prototypes inherit and folds new components back into it.
+`ux-prototyper` produces **2–3 meaningfully different HTML variants** + a comparison `index.html` in `specs/{feature}/prototype/`, inheriting `docs/{project-slug}/style-guide.md`. All states stacked: empty, loading, populated, error, optimistic. Run `/hallmark` on the leading variant to catch AI-slop before it hardens (install once with `npx skills add nutlope/hallmark`). The `style-guide-steward` owns the living style guide the prototypes inherit and folds new components back into it.
 
 **Phase gate:** show one unrelated stakeholder the comparison index. If they can't narrate the flow unprompted, iterate.
 

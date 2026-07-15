@@ -9,7 +9,7 @@ Synthesis of the May 2026 consensus from Claire Vo (Lenny's Newsletter), Boris C
 Beyond a spec-driven, TDD-enforced core, saucestack bakes in lessons from shipping a real product on this playbook — the parts a vanilla starter misses:
 
 - **Autonomous TDD with a RED-quality gate** — the `red-quality-gate` agent proves each failing test is sound (fails for the right reason, would not pass against a trivial implementation) and *replaces* the human "go", so the loop runs unsupervised without admitting false-greens.
-- **Design ownership** — a `style-guide-steward` (owns a living style guide), a `pattern-conformance-reviewer` (enforces explicit *and* implied UI patterns — the 8th reviewer), the `/hallmark` anti-AI-slop skill, and multi-variant HTML prototyping.
+- **Design ownership** — a `style-guide-steward` (owns a living style guide), a `pattern-conformance-reviewer` (enforces explicit *and* implied UI patterns — the 8th reviewer), the `/hallmark` anti-AI-slop skill (from Nutlope, installed via `npx skills add nutlope/hallmark`), and multi-variant HTML prototyping.
 - **Live browser QA** — the `browser-qa` skill drives a real browser (Chrome MCP) for exploratory QA beyond headless e2e.
 - **Learnings that get re-read** — an append-only `learnings.jsonl` + a SessionStart hook that injects the top lessons into every session. Capture ≠ retrieval; this fixes it.
 - **Enforcement over prose** — mechanically-checkable rules are hooks/gates, not prompts: `pr-base-guard` (a merge should = deploy to prod), a destructive-action deny-list, push-to-main protection.
@@ -65,7 +65,7 @@ Beyond a spec-driven, TDD-enforced core, saucestack bakes in lessons from shippi
     │   ├── pattern-conformance-reviewer.md ← Phase 5: review (explicit + implied UI patterns)
     │   ├── test-quality-reviewer.md     ← Phase 5: review (tautologies, mock-shape)
     │   └── eval-author.md               ← Phase 7: AI evals (κ ≥ 0.6)
-    ├── skills/                          ← 14 skills
+    ├── skills/                          ← 13 skills (+ hallmark, installed separately)
     │   ├── project-bootstrap/SKILL.md   ← project framework orchestrator
     │   ├── product-vision/SKILL.md      ← project framework: vision doc
     │   ├── domain-taxonomy/SKILL.md     ← project framework: shared vocabulary
@@ -76,7 +76,6 @@ Beyond a spec-driven, TDD-enforced core, saucestack bakes in lessons from shippi
     │   ├── tdd-loop/SKILL.md            ← RED → red-quality-gate → GREEN → REFACTOR
     │   ├── full-review/SKILL.md         ← 8 parallel reviewers
     │   ├── browser-qa/SKILL.md          ← real-browser exploratory QA (Chrome MCP)
-    │   ├── hallmark/SKILL.md            ← anti-AI-slop design audit
     │   ├── ship-pr/SKILL.md             ← pre-merge orchestration
     │   ├── architecture-review/SKILL.md ← two-pass feature design + adversarial
     │   └── compound-learning/SKILL.md   ← Phase 6 feedback loop
@@ -94,7 +93,7 @@ Beyond a spec-driven, TDD-enforced core, saucestack bakes in lessons from shippi
 
 ```bash
 # From the root of your repo:
-git clone https://github.com/{{your-github-user}}/saucestack.git ../saucestack
+git clone https://github.com/marcanthonyrosa/saucestack.git ../saucestack
 cp -r ../saucestack/.claude .
 cp ../saucestack/CLAUDE.md ../saucestack/AGENTS.md ../saucestack/PLAN.md .
 
@@ -103,6 +102,9 @@ mkdir -p specs docs/decisions reviews evals
 
 # Install tdd-guard (the PreToolUse hook depends on it)
 pnpm dlx tdd-guard@latest install
+
+# Install the hallmark design skill — anti-AI-slop; re-run any time to update
+npx skills add nutlope/hallmark
 
 # Gitignore the ephemeral working state
 cat >> .gitignore <<'EOF'
@@ -208,3 +210,12 @@ If your scripts differ, edit `.claude/settings.json` and the relevant agent file
 - GitHub Spec Kit — `github/spec-kit`
 - nizos/tdd-guard
 - Anthropic — Claude Code best practices + advanced patterns
+
+## Acknowledgements
+
+saucestack stands on other people's work:
+
+- **[hallmark](https://github.com/Nutlope/hallmark)** by Nutlope / Together AI (MIT) — the anti-AI-slop design skill, referenced via its own installer (`npx skills add nutlope/hallmark`) so it's always the latest version.
+- **[gstack](https://github.com/garrytan/gstack)** by Garry Tan (MIT) — a design influence. saucestack's real-browser QA, JIT-injected learnings store, multi-variant prototyping, and the upcoming freeze/checkpoint/fleet patterns are adapted from gstack's approach. **No gstack code is vendored here** — the ideas are credited with thanks.
+- **[tdd-guard](https://github.com/nizos/tdd-guard)** by Nizar Argov (MIT) — the PreToolUse hook that enforces test-first.
+- The methodology synthesizes work by the people in **References** above.
