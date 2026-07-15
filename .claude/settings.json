@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tdd-guard check --file \"$CLAUDE_FILE_PATH\"",
+            "description": "tdd-guard: block Edit/Write on production files when no failing test is scoped. Blocks test deletion. Blocks over-implementation. Install once: pnpm dlx tdd-guard@latest install"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pr-base-guard.sh\"",
+            "description": "pr-base-guard: block `gh pr create` against a non-main base (merge should = deploy to prod). Override an intentional stacked PR with a trailing `# stacked`."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$CLAUDE_FILE_PATH\" ]; then case \"$CLAUDE_FILE_PATH\" in *.ts|*.tsx|*.js|*.jsx) pnpm prettier --write \"$CLAUDE_FILE_PATH\" 2>&1 | tail -3 ;; esac; fi",
+            "description": "Format the just-edited file."
+          },
+          {
+            "type": "command",
+            "command": "pnpm typecheck 2>&1 | tail -20",
+            "description": "Run TypeScript check after every file edit; surface errors immediately."
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/learnings.sh\" preamble 2>/dev/null",
+            "description": "JIT: inject the top project learnings into context at session start so they actually get re-read. Append lessons with .claude/hooks/learnings.sh log."
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(pnpm:*)",
+      "Bash(npx:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git worktree:*)",
+      "Bash(supabase status)",
+      "Bash(supabase start)",
+      "Bash(supabase stop)",
+      "Bash(supabase db diff:*)",
+      "Bash(supabase migration:*)",
+      "Bash(supabase gen types:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(tdd-guard:*)"
+    ],
+    "deny": [
+      "Bash(supabase db reset:*)",
+      "Bash(pnpm db:reset:*)",
+      "Bash(pnpm db:reset:full:*)",
+      "Bash(pnpm db:seed:dump:*)",
+      "Bash(pnpm run db:reset:*)",
+      "Bash(pnpm run db:seed:dump:*)",
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git push origin main*)",
+      "Bash(git push origin master*)",
+      "Bash(git push origin HEAD:main*)",
+      "Bash(git push origin HEAD:master*)",
+      "Bash(gh pr merge:*)"
+    ]
+  }
+}
