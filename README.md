@@ -12,6 +12,7 @@ Beyond a spec-driven, TDD-enforced core, saucestack bakes in lessons from shippi
 - **Design ownership** — a `style-guide-steward` (owns a living style guide), a `pattern-conformance-reviewer` (enforces explicit *and* implied UI patterns — the 8th reviewer), the `/hallmark` anti-AI-slop skill (from Nutlope, installed via `npx skills add nutlope/hallmark`), and multi-variant HTML prototyping.
 - **Live browser QA** — the `browser-qa` skill drives a real browser (Chrome MCP) for exploratory QA beyond headless e2e.
 - **Learnings that get re-read** — an append-only `learnings.jsonl` + a SessionStart hook that injects the top lessons into every session. Capture ≠ retrieval; this fixes it.
+- **Compounding across projects** — `/saucestack-feedback` sends *generalizable* learnings from any project born of saucestack back here as a PR (or issue), so the starter sharpens every time it's used.
 - **Enforcement over prose** — mechanically-checkable rules are hooks/gates, not prompts: `pr-base-guard` (a merge should = deploy to prod), a destructive-action deny-list, push-to-main protection.
 - **Spec reconcile-back** — the spec-compliance reviewer folds intentional drift back into the spec and alarms only on *silent* drift.
 
@@ -40,6 +41,7 @@ Beyond a spec-driven, TDD-enforced core, saucestack bakes in lessons from shippi
 ├── docs/
 │   └── decisions/                       ← Architecture Decision Records, permanent
 ├── reviews/                             ← code review outputs (gitignored)
+├── .github/                             ← CONTRIBUTING + issue/PR templates (contributing to saucestack)
 └── .claude/
     ├── settings.json                    ← hooks (tdd-guard, pr-base-guard, learnings, typecheck) + permissions
     ├── agents/                          ← 22 specialized subagents
@@ -65,7 +67,7 @@ Beyond a spec-driven, TDD-enforced core, saucestack bakes in lessons from shippi
     │   ├── pattern-conformance-reviewer.md ← Phase 5: review (explicit + implied UI patterns)
     │   ├── test-quality-reviewer.md     ← Phase 5: review (tautologies, mock-shape)
     │   └── eval-author.md               ← Phase 7: AI evals (κ ≥ 0.6)
-    ├── skills/                          ← 13 skills (+ hallmark, installed separately)
+    ├── skills/                          ← 14 skills (+ hallmark, installed separately)
     │   ├── project-bootstrap/SKILL.md   ← project framework orchestrator
     │   ├── product-vision/SKILL.md      ← project framework: vision doc
     │   ├── domain-taxonomy/SKILL.md     ← project framework: shared vocabulary
@@ -78,15 +80,18 @@ Beyond a spec-driven, TDD-enforced core, saucestack bakes in lessons from shippi
     │   ├── browser-qa/SKILL.md          ← real-browser exploratory QA (Chrome MCP)
     │   ├── ship-pr/SKILL.md             ← pre-merge orchestration
     │   ├── architecture-review/SKILL.md ← two-pass feature design + adversarial
-    │   └── compound-learning/SKILL.md   ← Phase 6 feedback loop
+    │   ├── compound-learning/SKILL.md   ← Phase 6: sharpen THIS project
+    │   └── saucestack-feedback/SKILL.md ← upstream generalizable learnings to the starter
     ├── commands/
     │   ├── review.md                    ← /review
     │   ├── ship-pr.md                   ← /ship-pr
-    │   └── compound.md                  ← /compound
+    │   ├── compound.md                  ← /compound
+    │   └── saucestack-feedback.md       ← /saucestack-feedback
     ├── hooks/
     │   ├── pr-base-guard.sh             ← block PRs against a non-main base
     │   └── learnings.sh                 ← append-only learnings store + JIT retrieval
-    └── learnings.jsonl                  ← project lessons (auto-injected at session start)
+    ├── learnings.jsonl                  ← project lessons (auto-injected at session start)
+    └── starter.json                     ← provenance (powers /saucestack-feedback)
 ```
 
 ## Install
@@ -99,6 +104,11 @@ cp ../saucestack/CLAUDE.md ../saucestack/AGENTS.md ../saucestack/PLAN.md .
 
 # Create working folders
 mkdir -p specs docs/decisions reviews evals
+
+# Record where this project came from (powers /saucestack-feedback)
+cat > .claude/starter.json <<'EOF'
+{ "starter": { "name": "saucestack", "repo": "marcanthonyrosa/saucestack", "bootstrappedFrom": "v0.1" } }
+EOF
 
 # Install tdd-guard (the PreToolUse hook depends on it)
 pnpm dlx tdd-guard@latest install
@@ -197,6 +207,15 @@ If your scripts differ, edit `.claude/settings.json` and the relevant agent file
 6. Phase gates require human approval.
 7. /clear between unrelated features.
 8. Optimize for the next hundred iterations.
+
+## Contributing
+
+saucestack improves by being *used*. If you hit friction on a real project, that's a field learning worth upstreaming.
+
+- From a project bootstrapped off saucestack, run **`/saucestack-feedback`** — it classifies the lesson (generalizable vs project-specific) and opens a PR (or an issue) back here with the story attached.
+- By hand: open a **field-learning** issue, or a PR against `main`. See **[.github/CONTRIBUTING.md](.github/CONTRIBUTING.md)**.
+
+The bar for a *starter*: **generalizable only, and keep it lean.** A change belongs here only if the next project, in a different domain, would want it unchanged.
 
 ## References
 
