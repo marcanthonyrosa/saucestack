@@ -10,7 +10,7 @@
 
 1. **The spec is the source of truth, not the chat.** Versioned, repo-resident, Markdown, four files per feature.
 2. **Plan before you write. Always.** Plan mode is a gate.
-3. **Decompose by concern; parallelize via subagents.** One agent per job.
+3. **Decompose by concern; parallelize via subagents.** One agent per job — fan out reads in parallel, isolate every writer in its own worktree, serialize only true data dependencies (see "Concurrency posture").
 4. **Guardrails belong in hooks, not prompts.** `tdd-guard` blocks; prompts persuade.
 5. **Tests for deterministic code. Evals for non-deterministic LLM behavior.** Never confuse them.
 
@@ -138,6 +138,12 @@ Enforcement:
 - The **`tdd-guard`** PreToolUse hook physically blocks Write/Edit on production files when no failing test is scoped. Belt; the subagent isolation is suspenders.
 
 Test tiers handled by specialist subagents: `unit-test-author`, `integration-test-author`, `e2e-test-author`, `regression-test-author`.
+
+**Concurrency posture.** "One agent at a time" is not the rule — the rule is **read vs. write**:
+
+- **Reads fan out.** Reviewers, `Explore`, and search agents only read, so run as many concurrently as the job needs (issue the `Agent` calls in a single message). `/review` already does this with eight reviewers; "sequential defeats the purpose."
+- **Writers get isolated.** Two agents mutating the *same* working directory collide — and the `PostToolUse` typecheck hook runs against the whole project, so they'd trip over each other's type state. Give every concurrent writer its own git worktree (or `Agent(isolation: "worktree")`).
+- **Serialize only true data dependencies.** The `tdd-loop` phases (RED → gate → GREEN → REFACTOR) run in series because each consumes the previous phase's output — not because concurrency is banned.
 
 **Parallelism via worktrees** (Boris Cherny pattern):
 
