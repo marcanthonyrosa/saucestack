@@ -29,6 +29,7 @@ Next.js 15 App Router · Supabase (Postgres + Auth + Storage) · Vercel · Resen
 - Prefer Suspense + RSC streaming over client-side loading states.
 - For sensitive or regulated fields (PII, PHI, financial, secrets): never in logs, URLs, error messages, or analytics.
 - Push every commit to the feature branch's remote. Never `git push` to `main` or `master` — main updates only via PR. Never force-push.
+- Keep CI lean — run only what you'd act on: trigger on PRs to `main` (not every push), cancel superseded runs, gate expensive jobs (real-DB, e2e) behind the fast checks, set timeouts. Don't pay Actions minutes for tests nobody acts on. Template: `.claude/templates/ci.yml`.
 
 ## Workflow
 
