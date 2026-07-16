@@ -28,6 +28,7 @@ Next.js 15 App Router · Supabase (Postgres + Auth + Storage) · Vercel · Resen
 - Prefer server actions over API routes for client mutations.
 - Prefer Suspense + RSC streaming over client-side loading states.
 - For sensitive or regulated fields (PII, PHI, financial, secrets): never in logs, URLs, error messages, or analytics.
+- Run subagents concurrently when work is independent: fan out read-only agents in parallel, isolate every concurrent writer in its own git worktree, serialize only true data dependencies (e.g. the TDD phases). See PLAN.md "Concurrency posture."
 - Push every commit to the feature branch's remote. Never `git push` to `main` or `master` — main updates only via PR. Never force-push.
 
 ## Workflow
