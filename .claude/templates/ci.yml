@@ -1,0 +1,74 @@
+# saucestack lean CI — run only what you'd act on, at the cheapest trigger.
+# Copy to .github/workflows/ci.yml, then adjust the job commands to your scripts.
+#
+# The cost structure IS the point of this file:
+#   - Triggers on PRs to main + merges to main — NOT every push to every branch.
+#     A WIP push whose CI nobody reads is wasted Actions minutes.
+#   - concurrency: a new push cancels the in-flight run for the same ref.
+#   - Expensive jobs (real DB, e2e) `needs:` the fast checks — they don't boot
+#     Supabase if typecheck/unit already failed.
+#   - paths-ignore: a docs/spec-only change runs nothing.
+#   - timeout-minutes: a hung job can't burn hours.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore: ['**/*.md', 'docs/**', 'specs/**']
+  push:
+    branches: [main]
+    paths-ignore: ['**/*.md', 'docs/**', 'specs/**']
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Typecheck + Unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test:unit
+
+  tests-db:
+    name: Tests (real DB)
+    needs: [checks]                 # fail-fast: skip the Supabase boot if checks failed
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - run: supabase start          # applies migrations + seed
+      - run: pnpm test:integration   # your real-DB suite
+
+  e2e:
+    name: E2E (Playwright)
+    needs: [checks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      # Cheapest e2e: point Playwright at the Vercel preview URL (Vercel already
+      # built it) instead of a local `pnpm build` + `supabase start`. Wire the
+      # preview URL into PLAYWRIGHT_BASE_URL (a deployment-status trigger, or a
+      # repo variable) and drop the local build/serve from your Playwright config.
+      - run: pnpm test:e2e
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ vars.PREVIEW_URL }}

@@ -30,6 +30,7 @@ Next.js 15 App Router · Supabase (Postgres + Auth + Storage) · Vercel · Resen
 - For sensitive or regulated fields (PII, PHI, financial, secrets): never in logs, URLs, error messages, or analytics.
 - Run subagents concurrently when work is independent: fan out read-only agents in parallel, isolate every concurrent writer in its own git worktree, serialize only true data dependencies (e.g. the TDD phases). See PLAN.md "Concurrency posture."
 - Push every commit to the feature branch's remote. Never `git push` to `main` or `master` — main updates only via PR. Never force-push.
+- Keep CI lean — run only what you'd act on: trigger on PRs to `main` (not every push), cancel superseded runs, gate expensive jobs (real-DB, e2e) behind the fast checks, set timeouts. Don't pay Actions minutes for tests nobody acts on. Template: `.claude/templates/ci.yml`.
 
 ## Workflow
 

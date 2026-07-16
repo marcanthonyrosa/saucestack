@@ -110,6 +110,9 @@ cat > .claude/starter.json <<'EOF'
 { "starter": { "name": "saucestack", "repo": "marcanthonyrosa/saucestack", "bootstrappedFrom": "v0.1" } }
 EOF
 
+# (Optional) lean CI — a cost-conscious GitHub Actions workflow (runs only what you'd act on)
+mkdir -p .github/workflows && cp .claude/templates/ci.yml .github/workflows/ci.yml
+
 # Install tdd-guard (the PreToolUse hook depends on it)
 pnpm dlx tdd-guard@latest install
 
