@@ -31,11 +31,18 @@
             "type": "command",
             "command": "if [ -f \"$CLAUDE_FILE_PATH\" ]; then case \"$CLAUDE_FILE_PATH\" in *.ts|*.tsx|*.js|*.jsx) pnpm prettier --write \"$CLAUDE_FILE_PATH\" 2>&1 | tail -3 ;; esac; fi",
             "description": "Format the just-edited file."
-          },
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
           {
             "type": "command",
-            "command": "pnpm typecheck 2>&1 | tail -20",
-            "description": "Run TypeScript check after every file edit; surface errors immediately."
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/typecheck-on-turn.sh\"",
+            "description": "typecheck-on-turn: run `pnpm typecheck` ONCE at turn end, only when the turn changed TS/JS. Replaces the per-edit PostToolUse typecheck that re-ran tsc over the whole project after every Edit/Write."
           }
         ]
       }
