@@ -13,7 +13,7 @@ Beyond a spec-driven, TDD-enforced core, saucestack bakes in lessons from shippi
 - **Live browser QA** — the `browser-qa` skill drives a real browser (Chrome MCP) for exploratory QA beyond headless e2e.
 - **Learnings that get re-read** — an append-only `learnings.jsonl` + a SessionStart hook that injects the top lessons into every session. Capture ≠ retrieval; this fixes it.
 - **Compounding across projects** — `/saucestack-feedback` sends *generalizable* learnings from any project born of saucestack back here as a PR (or issue), so the starter sharpens every time it's used.
-- **Enforcement over prose** — mechanically-checkable rules are hooks/gates, not prompts: `pr-base-guard` (a merge should = deploy to prod), a destructive-action deny-list, push-to-main protection.
+- **Enforcement over prose** — mechanically-checkable rules are hooks/gates, not prompts: `pr-base-guard` (a merge should = deploy to prod), `merged-branch-guard` (a push to an already-merged branch is silently orphaned), a destructive-action deny-list, push-to-main protection.
 - **Spec reconcile-back** — the spec-compliance reviewer folds intentional drift back into the spec and alarms only on *silent* drift.
 
 ## The spec-driven + TDD core
@@ -43,7 +43,7 @@ Beyond a spec-driven, TDD-enforced core, saucestack bakes in lessons from shippi
 ├── reviews/                             ← code review outputs (gitignored)
 ├── .github/                             ← CONTRIBUTING + issue/PR templates (contributing to saucestack)
 └── .claude/
-    ├── settings.json                    ← hooks (tdd-guard, pr-base-guard, learnings, typecheck) + permissions
+    ├── settings.json                    ← hooks (tdd-guard, pr-base-guard, merged-branch-guard, learnings, typecheck) + permissions
     ├── agents/                          ← 22 specialized subagents
     │   ├── pm-spec-author.md            ← Phase 0: four-file spec
     │   ├── architect.md                 ← Phase 1: design + ADRs (has adversarial mode)
@@ -89,6 +89,7 @@ Beyond a spec-driven, TDD-enforced core, saucestack bakes in lessons from shippi
     │   └── saucestack-feedback.md       ← /saucestack-feedback
     ├── hooks/
     │   ├── pr-base-guard.sh             ← block PRs against a non-main base
+    │   ├── merged-branch-guard.sh       ← block pushes to an already-merged branch
     │   └── learnings.sh                 ← append-only learnings store + JIT retrieval
     ├── learnings.jsonl                  ← project lessons (auto-injected at session start)
     └── starter.json                     ← provenance (powers /saucestack-feedback)
