@@ -19,6 +19,11 @@
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pr-base-guard.sh\"",
             "description": "pr-base-guard: block `gh pr create` against a non-main base (merge should = deploy to prod). Override an intentional stacked PR with a trailing `# stacked`."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/merged-branch-guard.sh\"",
+            "description": "merged-branch-guard: block `git push` to a branch whose PR already merged (commits would be silently orphaned). Override with a trailing `# allow-merged-push`."
           }
         ]
       }
