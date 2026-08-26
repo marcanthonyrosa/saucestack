@@ -108,7 +108,13 @@ Run for anything substantially new that isn't already an established pattern —
 - [ ] Two-column card: 330px dimension picker | selected dimension's detail
 - [ ] The learned log is INSIDE that card, below a rule — same card, next movement
 - [ ] A second card holds the full change log
+
+## Deliberate divergences
+
+- [ ] Selection is a URL search param, not client state — same interaction, server-rendered.
 ```
+
+⚠ **RECORD THE DIVERGENCES OR THE NEW CHECK BECOMES NOISE.** Implementing a picture faithfully sometimes means deviating from it: a prototype's `onClick` becomes a URL param, a fixed width becomes a token, a hand-drawn state becomes a real loading boundary. Those are *better* implementations of the same decision — but a reviewer diffing page against prototype reads them as gaps. An unrecorded divergence turns the chosen-design check into a false-positive generator, and a check that cries wolf gets skipped.
 
 ⚠ **This is the step whose absence lets a design be approved and never built.** A prototype states things no acceptance criterion states — where the cards are, what is master and what is detail, what is one object and what is two. Content ACs and composition decisions overlap enough to feel identical, so a ledger built from ACs alone can be finished completely while the chosen page was never built. Write the composition decisions down or they exist only in a picture nobody reads again.
 
