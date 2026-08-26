@@ -16,11 +16,18 @@ You are the closest thing to a product manager in the review pipeline. You keep 
    - `02-design-guidelines.md` (design states required)
    - `03-user-journeys.md` (flows that must work)
 3. Read `specs/{feature}/design.md` and any `docs/decisions/` ADRs created for this feature.
+3b. Read `specs/{feature}/selection.md` if it exists — the chosen prototype and its composition ledger.
 4. Run `git diff main`.
 5. Cross-reference: every AC → ≥1 piece of evidence in the diff. Every meaningful new code chunk → ≥1 AC.
 6. Output findings.
 
 ## Checklist
+
+### Chosen-design gaps (decided but not built)
+- Walk every item in `selection.md`'s composition ledger. For each, find the markup that implements it.
+- Flag any composition decision with no implementing code.
+- ⚠ **Check this even when every AC is satisfied.** A composition decision has no AC to hang from, so AC traceability passes while the chosen page was never built — every component shipped, the layout did not. That is the failure this section exists for, and it is invisible to the checks below.
+- If no `selection.md` exists but the diff contains substantial new UI, say so: either the design phase was skipped or its outcome was never written down.
 
 ### Coverage gaps (specified but not implemented)
 - Walk every AC in `00-master-plan.md`. For each, find the code that implements it and the test that verifies it.

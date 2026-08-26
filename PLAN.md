@@ -98,7 +98,20 @@ Run for anything substantially new that isn't already an established pattern —
 
 `ux-prototyper` produces **2–3 meaningfully different HTML variants** + a comparison `index.html` in `specs/{feature}/prototype/`, inheriting `docs/{project-slug}/style-guide.md`. All states stacked: empty, loading, populated, error, optimistic. Run `/hallmark` on the leading variant to catch AI-slop before it hardens (install once with `npx skills add nutlope/hallmark`). The `style-guide-steward` owns the living style guide the prototypes inherit and folds new components back into it.
 
-**Phase gate:** show one unrelated stakeholder the comparison index. If they can't narrate the flow unprompted, iterate.
+**When a variant wins, write down what it commits to.** `task-planner` (or whoever ran the phase) records `specs/{feature}/selection.md`: which variant won, where it lives, and a **composition ledger** — the layout decisions the prototype encodes, as checkable items:
+
+```markdown
+# Selected: variant C — dimension browser
+
+- [ ] Heading matter (title, score, verdict) sits OUTSIDE any card — it is the masthead
+- [ ] Two-column card: 330px dimension picker | selected dimension's detail
+- [ ] The learned log is INSIDE that card, below a rule — same card, next movement
+- [ ] A second card holds the full change log
+```
+
+⚠ **This is the step whose absence lets a design be approved and never built.** A prototype states things no acceptance criterion states — where the cards are, what is master and what is detail, what is one object and what is two. Content ACs and composition decisions overlap enough to feel identical, so a ledger built from ACs alone can be finished completely while the chosen page was never built. Write the composition decisions down or they exist only in a picture nobody reads again.
+
+**Phase gate:** show one unrelated stakeholder the comparison index. If they can't narrate the flow unprompted, iterate. Then `selection.md` exists, with a composition ledger.
 
 ## Phase 3 — Plan as test ledger
 
@@ -121,7 +134,9 @@ Each item:
 - One test that proves it.
 - One acceptance criterion from `00-master-plan.md` it satisfies.
 
-**Phase gate:** every AC from the master plan maps to at least one ledger item; every ledger item maps to at least one AC.
+⚠ **Derive this AFTER Phase 2 closes, and re-derive it if a design gate reopens.** A ledger written before the prototype exists encodes the ACs and nothing the prototype decided; resuming it afterwards is how a chosen design gets skipped. A gate that cannot change the plan downstream of it is a checkpoint, not a gate.
+
+**Phase gate:** every AC from the master plan maps to at least one ledger item; every ledger item maps to at least one AC — **and every item in `selection.md`'s composition ledger maps to at least one ledger item.** The third clause is not redundant: composition decisions have no AC to hang from, which is exactly why they go missing.
 
 ## Phase 4 — TDD loop with forced stops
 
