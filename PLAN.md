@@ -10,6 +10,7 @@
 
 1. **The spec is the source of truth, not the chat.** Versioned, repo-resident, Markdown, four files per feature.
 2. **Plan before you write. Always.** Plan mode is a gate.
+   ⚠ **And plan mode is not a substitute for the loop.** Feature-sized work goes through the phases and leaves `specs/{feature}/` behind; a plan-mode plan in the chat is not an artifact anyone can review a diff against. Chores, hotfixes and single-file fixes are the exception — name them as such. A milestone that arrives as a conversation and leaves no spec directory has skipped every gate below, and no exit gate can catch what never entered.
 3. **Decompose by concern; parallelize via subagents.** One agent per job — fan out reads in parallel, isolate every writer in its own worktree, serialize only true data dependencies (see "Concurrency posture").
 4. **Guardrails belong in hooks, not prompts.** `tdd-guard` blocks; prompts persuade.
 5. **Tests for deterministic code. Evals for non-deterministic LLM behavior.** Never confuse them.
@@ -107,7 +108,13 @@ Run for anything substantially new that isn't already an established pattern —
 - [ ] Two-column card: 330px dimension picker | selected dimension's detail
 - [ ] The learned log is INSIDE that card, below a rule — same card, next movement
 - [ ] A second card holds the full change log
+
+## Deliberate divergences
+
+- [ ] Selection is a URL search param, not client state — same interaction, server-rendered.
 ```
+
+⚠ **RECORD THE DIVERGENCES OR THE NEW CHECK BECOMES NOISE.** Implementing a picture faithfully sometimes means deviating from it: a prototype's `onClick` becomes a URL param, a fixed width becomes a token, a hand-drawn state becomes a real loading boundary. Those are *better* implementations of the same decision — but a reviewer diffing page against prototype reads them as gaps. An unrecorded divergence turns the chosen-design check into a false-positive generator, and a check that cries wolf gets skipped.
 
 ⚠ **This is the step whose absence lets a design be approved and never built.** A prototype states things no acceptance criterion states — where the cards are, what is master and what is detail, what is one object and what is two. Content ACs and composition decisions overlap enough to feel identical, so a ledger built from ACs alone can be finished completely while the chosen page was never built. Write the composition decisions down or they exist only in a picture nobody reads again.
 

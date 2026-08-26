@@ -7,6 +7,7 @@
 - **Stack:** Next.js 15 App Router · TypeScript strict · Supabase · Tailwind · shadcn/ui · Vitest · Playwright · pnpm.
 - **Architecture:** Monolith. Managed services over self-hosted. Solo-builder maintainability over cleverness.
 - **The spec is the source of truth.** Per-feature specs live in `specs/{feature}/`. Architecture decisions live in `docs/decisions/`. Read the relevant spec before writing code.
+- **A chosen design is part of the spec.** When a direction is selected — by whatever tool explored it — write `specs/{feature}/selection.md` with its composition ledger (where the cards are, what is master and what is detail, what is one object and what is two) before building. A picture and a chat message are not artifacts a diff can be reviewed against, and composition decisions have no acceptance criterion to hang from, so they are the ones that go missing while every AC passes.
 
 ## Coding rules (positive)
 
@@ -19,6 +20,7 @@
 - One default export per file. Named exports for utilities.
 - Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`, scoped where useful.
 - Push every commit to the feature branch's remote. Never `git push` to `main` or `master` — main updates only via PR. Never force-push.
+- **A merged PR closes its branch.** Once a PR is merged, stop pushing to that branch: further commits are *orphaned, not queued* — they sit on a dead branch and silently never ship. Re-branch from updated `main` and open a new PR. Before pushing to any branch you have already proposed, check it is still open (`gh pr view <n> --json state`). This bites hardest when a review conversation continues after the merge — the follow-up commits are exactly the ones the discussion decided were most important, and they are the ones that vanish.
 
 ## Testing rules
 
