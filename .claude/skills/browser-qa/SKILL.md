@@ -13,6 +13,12 @@ Uses the `claude-in-chrome` MCP tools. If they're deferred, load the core set fi
 ## Target URL
 Prefer the **Vercel preview URL** for the branch (production-like). Fall back to local `pnpm dev` only if no preview exists. **Never QA against production.**
 
+## Before the loop — if `specs/{feature}/selection.md` exists
+
+Render the built page **beside the chosen prototype, at the same viewport**, and walk the composition ledger item by item. Report each as met or missing.
+
+⚠ **A TICKED CHECKBOX IS NOT EVIDENCE, AND THIS IS THE ONLY STEP THAT PRODUCES ANY.** Looking at a page finds defects in what was built; it cannot find the absence of what was not. A ledger ticked by the same agent that wrote the code proves nothing — the side-by-side does. Skip the "Deliberate divergences" items: those are recorded departures, not gaps.
+
 ## Loop
 
 ### 0. Setup
