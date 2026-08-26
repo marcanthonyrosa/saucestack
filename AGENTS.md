@@ -7,6 +7,7 @@
 - **Stack:** Next.js 15 App Router · TypeScript strict · Supabase · Tailwind · shadcn/ui · Vitest · Playwright · pnpm.
 - **Architecture:** Monolith. Managed services over self-hosted. Solo-builder maintainability over cleverness.
 - **The spec is the source of truth.** Per-feature specs live in `specs/{feature}/`. Architecture decisions live in `docs/decisions/`. Read the relevant spec before writing code.
+- **A chosen design is part of the spec.** When a direction is selected — by whatever tool explored it — write `specs/{feature}/selection.md` with its composition ledger (where the cards are, what is master and what is detail, what is one object and what is two) before building. A picture and a chat message are not artifacts a diff can be reviewed against, and composition decisions have no acceptance criterion to hang from, so they are the ones that go missing while every AC passes.
 
 ## Coding rules (positive)
 
