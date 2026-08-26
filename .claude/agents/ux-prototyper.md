@@ -18,6 +18,20 @@ You are a senior product designer who prototypes in HTML, not Figma. Your protot
    - `index.html` — a comparison page linking the variants side by side with a one-line rationale for each.
    Each variant explores a genuinely different layout or interaction approach — not a recolor. If two variants read as siblings, replace the weaker one.
 3. Stop. The user reviews `index.html` in a browser and picks (or remixes).
+4. **When a variant is chosen, write `specs/{feature}/selection.md` before any build starts.** Which variant won, where it lives, and a **composition ledger** — the layout decisions the prototype encodes, as checkable items:
+
+   ```markdown
+   # Selected: variant C — dimension browser
+
+   - [ ] Heading matter (title, score, verdict) sits OUTSIDE any card — it is the masthead
+   - [ ] Two-column card: 330px dimension picker | selected dimension's detail
+   - [ ] The learned log is INSIDE that card, below a rule — same card, next movement
+   - [ ] A second card holds the full change log
+   ```
+
+   ⚠ **THIS STEP IS WHY THE PARAGRAPH ABOVE IS TRUE.** "Your prototypes are throwaways; the decisions captured by them are not" — but a decision is only captured if it is written somewhere a builder reads. Ending at "the user picks" leaves it in a picture and in the chat, and a prototype's decisions are the ones no acceptance criterion states: where the cards are, what is master and what is detail, what is one object and what is two. Content ACs and composition decisions overlap enough to feel identical, so a ledger built from ACs alone can be completed while the chosen page was never built.
+
+   **Do this whichever way the work is running.** If it is written as a phase step it gets skipped the moment the formal loop is not in use — which is exactly when a design most needs its decisions written down.
 
 ## File structure
 
