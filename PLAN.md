@@ -10,6 +10,7 @@
 
 1. **The spec is the source of truth, not the chat.** Versioned, repo-resident, Markdown, four files per feature.
 2. **Plan before you write. Always.** Plan mode is a gate.
+   ⚠ **And plan mode is not a substitute for the loop.** Feature-sized work goes through the phases and leaves `specs/{feature}/` behind; a plan-mode plan in the chat is not an artifact anyone can review a diff against. Chores, hotfixes and single-file fixes are the exception — name them as such. A milestone that arrives as a conversation and leaves no spec directory has skipped every gate below, and no exit gate can catch what never entered.
 3. **Decompose by concern; parallelize via subagents.** One agent per job — fan out reads in parallel, isolate every writer in its own worktree, serialize only true data dependencies (see "Concurrency posture").
 4. **Guardrails belong in hooks, not prompts.** `tdd-guard` blocks; prompts persuade.
 5. **Tests for deterministic code. Evals for non-deterministic LLM behavior.** Never confuse them.
