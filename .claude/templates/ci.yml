@@ -1,59 +1,147 @@
-# saucestack lean CI — run only what you'd act on, at the cheapest trigger.
+# saucestack lean CI — the pull-request path is ONE job.
 # Copy to .github/workflows/ci.yml, then adjust the job commands to your scripts.
+# Its companion is templates/nightly.yml — copy both or neither.
 #
-# The cost structure IS the point of this file:
-#   - Triggers on PRs to main + merges to main — NOT every push to every branch.
-#     A WIP push whose CI nobody reads is wasted Actions minutes.
-#   - concurrency: a new push cancels the in-flight run for the same ref.
-#   - Expensive jobs (real DB, e2e) `needs:` the fast checks — they don't boot
-#     Supabase if typecheck/unit already failed.
-#   - paths-ignore: a docs/spec-only change runs nothing.
-#   - timeout-minutes: a hung job can't burn hours.
+# THE COST STRUCTURE IS THE POINT, but the gate's COVERAGE is the point before
+# that. A cheap gate that tests nothing is not a saving, it is a liability: it
+# reports green, so nobody looks, and the expensive jobs that would have caught
+# something sit advisory and ignored. An audit of a repo running the earlier
+# version of this file found exactly that — 8 checks, 1 of them required, and
+# that one ran 5 spec files out of 1020. See docs/ci-leanness.md for the whole
+# story; the rules it produced are baked in below.
+#
+#   1. ONE trigger per commit. `push` on every branch AND `pull_request` means
+#      every commit on an open PR runs the whole matrix TWICE.
+#   2. The gate runs everything that needs no infrastructure — not a directory.
+#      If you co-locate tests with source (saucestack tells you to), then
+#      `vitest run tests/unit` covers almost nothing. Route by what each file
+#      actually reaches for: templates/vitest.route.ts.
+#   3. Docs-only skipping is a STEP, never `paths-ignore` on the trigger. A
+#      required check that never REPORTS blocks the PR forever.
+#   4. Anything needing a database or a browser runs post-merge and nightly,
+#      not on the PR path.
+#   5. Typecheck belongs to your build. If your framework's build typechecks the
+#      project (Next.js does, absent `ignoreBuildErrors`, when tsconfig includes
+#      your tests), the preview deploy already does this work — running
+#      `tsc --noEmit` here is the same work twice. Keep it nightly as a backstop
+#      so a provider outage cannot hide a type error indefinitely.
 name: CI
 
 on:
   pull_request:
     branches: [main]
-    paths-ignore: ['**/*.md', 'docs/**', 'specs/**']
   push:
     branches: [main]
-    paths-ignore: ['**/*.md', 'docs/**', 'specs/**']
 
+# One run per ref. `main` is never cancelled — those runs are the post-merge
+# record.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+  pull-requests: read # the docs-only detector reads the PR's file list
 
 jobs:
-  checks:
-    name: Typecheck + Unit
+  fast:
+    # Make THIS the required status check. Renaming the job renames the check
+    # and silently breaks your ruleset — change both together.
+    name: Fast tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      # Read the changed files from the API, NOT `git diff`. A pull_request
+      # checkout has no reliable `origin/<base>` ref to diff against, so
+      # `git merge-base` fails and takes the job with it under `set -e`.
+      # Fail OPEN: an empty or unreadable list runs the tests. A silent skip on
+      # a broken lookup is how a gate stops gating.
+      - name: Detect docs-only change
+        id: scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED="$(gh api --paginate \
+              "repos/${{ github.repository }}/pulls/${{ github.event.number }}/files" \
+              --jq '.[].filename')" || CHANGED=""
+          else
+            CHANGED="$(gh api --paginate \
+              "repos/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }}" \
+              --jq '.files[].filename')" || CHANGED=""
+          fi
+          echo "changed files:"; echo "$CHANGED" | sed 's/^/  /'
+          if [ -z "$CHANGED" ]; then
+            echo "::warning::Could not determine changed files — running the tests."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          elif echo "$CHANGED" | grep -qvE '(\.md$|^docs/|^specs/|^\.github/ISSUE_TEMPLATE/)'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Docs-only change — skipping the test run."
+          fi
+
       - uses: pnpm/action-setup@v4
+        if: steps.scope.outputs.code == 'true'
       - uses: actions/setup-node@v4
+        if: steps.scope.outputs.code == 'true'
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm test:unit
+        if: steps.scope.outputs.code == 'true'
 
-  tests-db:
-    name: Tests (real DB)
-    needs: [checks]                 # fail-fast: skip the Supabase boot if checks failed
+      # Every spec that needs no infrastructure, fully parallel.
+      # `test:fast` is defined by templates/vitest.fast.config.ts.
+      #
+      # ONCE THIS PASSES ~2 MINUTES, SHARD IT. A GitHub runner has 2 cores; a
+      # dev laptop has 8-16, so a suite that feels instant locally can take ten
+      # minutes here — mostly per-file environment setup, which divides cleanly.
+      # Add `strategy: { fail-fast: false, matrix: { shard: [1,2,3,4] } }`, name
+      # the job `Fast shard ${{ matrix.shard }}`, and add a tiny aggregator job
+      # named `Fast tests` with `needs: [fast]`, `if: always()`, that fails
+      # unless `needs.fast.result == 'success'` — so the branch rule still has
+      # ONE stable name to require. Wall time drops ~4x for roughly the same
+      # billed minutes.
+      #
+      # ⚠️ When you do, DO NOT write `pnpm test:fast -- --shard=1/4`. pnpm
+      # swallows the `--`, vitest never sees the flag, and every shard silently
+      # runs the WHOLE suite — four times the work, no speedup, and four green
+      # checks indistinguishable from a working split. Call the runner directly:
+      #   pnpm exec vitest run --config vitest.fast.config.ts --shard=1/4
+      - name: Run fast tests
+        if: steps.scope.outputs.code == 'true'
+        run: pnpm test:fast
+
+  database:
+    name: Database tests
+    # POST-MERGE ONLY. For a small team the useful question is "did main
+    # break", and that is answered as well after the merge as before it —
+    # without paying on every intermediate commit of a stacked branch.
+    # If you have enough committers that a red main is expensive, move this to
+    # the PR path and accept the minutes. That is the trade, stated once.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      # Your DB suite's opt-in flag, if it has one. A guard that refuses to
+      # connect without an explicit flag is what stops a stray local run from
+      # truncating a populated dev database.
+      ALLOW_DESTRUCTIVE_DB_TESTS: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+
       # A duplicate migration VERSION makes `supabase start` fail 23505 on the
       # duplicate — which turns this job red on EVERY branch, not just the one
       # that introduced it, until someone works out why. Two people numbering a
       # migration from `origin/main` cannot see each other's unmerged branch, so
-      # the collision is easy to create and expensive to diagnose. Catch it here,
-      # before the container starts, and name both files.
+      # the collision is easy to create and expensive to diagnose. Catch it
+      # here, before the container starts, and name both files.
       - name: No duplicate migration versions
         run: |
           dupes=$(ls supabase/migrations/*.sql 2>/dev/null \
@@ -66,25 +154,8 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with: { version: latest }
-      - run: supabase start          # applies migrations + seed
-      - run: pnpm test:integration   # your real-DB suite
+      - run: supabase start # applies migrations + seed
 
-  e2e:
-    name: E2E (Playwright)
-    needs: [checks]
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
-      # Cheapest e2e: point Playwright at the Vercel preview URL (Vercel already
-      # built it) instead of a local `pnpm build` + `supabase start`. Wire the
-      # preview URL into PLAYWRIGHT_BASE_URL (a deployment-status trigger, or a
-      # repo variable) and drop the local build/serve from your Playwright config.
-      - run: pnpm test:e2e
-        env:
-          PLAYWRIGHT_BASE_URL: ${{ vars.PREVIEW_URL }}
+      # ONLY the specs that need a database. Running the whole suite here
+      # re-runs everything `fast` already ran, serialized, behind Docker.
+      - run: pnpm test:db

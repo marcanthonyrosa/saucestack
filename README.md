@@ -111,8 +111,26 @@ cat > .claude/starter.json <<'EOF'
 { "starter": { "name": "saucestack", "repo": "marcanthonyrosa/saucestack", "bootstrappedFrom": "v0.1" } }
 EOF
 
-# (Optional) lean CI — a cost-conscious GitHub Actions workflow (runs only what you'd act on)
-mkdir -p .github/workflows && cp .claude/templates/ci.yml .github/workflows/ci.yml
+# (Optional) lean CI — the pull-request path is ONE job; the slow half runs nightly.
+# Copy both, or neither: ci.yml moves the database/e2e work into nightly.yml.
+mkdir -p .github/workflows
+cp .claude/templates/ci.yml      .github/workflows/ci.yml
+cp .claude/templates/nightly.yml .github/workflows/nightly.yml
+
+# The fast/slow test split ci.yml expects. Routes each spec by what it actually
+# reaches for — a gate pointed at `tests/unit` covers almost nothing when tests
+# are co-located, which is what saucestack tells you to do.
+cp .claude/templates/vitest.route.ts       vitest.route.ts
+cp .claude/templates/vitest.route.test.ts  vitest.route.test.ts
+cp .claude/templates/vitest.fast.config.ts vitest.fast.config.ts
+cp .claude/templates/vitest.db.config.ts   vitest.db.config.ts
+# then add to package.json:
+#   "test:fast": "vitest run --config vitest.fast.config.ts"
+#   "test:db":   "ALLOW_DESTRUCTIVE_DB_TESTS=1 vitest run --config vitest.db.config.ts"
+# and point your branch ruleset's required check at the "Fast tests" JOB NAME.
+#
+# Already adopted saucestack a while ago? Templates only reach new repos — run
+# /ci-audit to find where yours has drifted.
 
 # Install tdd-guard (the PreToolUse hook depends on it)
 pnpm dlx tdd-guard@latest install
