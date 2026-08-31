@@ -31,6 +31,23 @@ git diff main -- '**/*.test.*' '**/*.spec.*' | grep -nE 'setTimeout|waitForTimeo
 git diff main -- '**/*.test.*' '**/*.spec.*' | grep -nE 'mockReturnValue|mockResolvedValue'
 ```
 
+## Silent-failure surfaces (flag these wherever they appear in the diff)
+
+Not strictly test quality, but this reviewer is the one reading for "does the suite prove
+what it claims", and these are the defects tests routinely fail to catch:
+
+- **A `safeParse`/`try` that drops the item and continues.** Ask what the affected human
+  sees. If the answer is "a shorter list, and a log line", that is a success report over
+  missing data. It must surface where that person will see it.
+- **A producer-only assertion.** A test proving N rows were written proves nothing about
+  whether the consumer can read them. Look for a test that runs the READER over the
+  writer's real output — its absence is the finding.
+- **A fixture/live seam that falls back silently.** Fine locally; against production it
+  fabricates results and reports success. The fallback must be impossible, or loud, when
+  pointed at prod.
+- **An `.optional()` field fed by a `T | null` source.** `.optional()` accepts `undefined`,
+  not `null`; the row fails to parse and — see the first bullet — usually vanishes quietly.
+
 ## Checklist per file
 
 ### Tautological assertions
@@ -60,8 +77,9 @@ git diff main -- '**/*.test.*' '**/*.spec.*' | grep -nE 'mockReturnValue|mockRes
 - Tests assert observable outcomes — return values, DB state, rendered output
 
 ### Skipped / focused
-- No `.skip`, `.only`, `.todo` in committed code
-- If a test is genuinely deferred, delete it or move it behind a clearly named feature flag
+- No `.only` in committed code, ever
+- No bare `.skip` / `.todo` hiding a broken or unfinished test — delete it or move it behind a clearly named feature flag
+- A CONDITIONAL skip on an environment gate (`describe.skipIf(!DB_ENABLED)`, a missing API key) is legitimate and preferred over a suite that throws: a suite that cannot run should report as skipped, not failed. Red that always means nothing teaches the team to stop reading red
 
 ### Coverage shape (advisory)
 - Happy path covered
