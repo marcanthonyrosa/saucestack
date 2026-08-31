@@ -48,6 +48,22 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      # A duplicate migration VERSION makes `supabase start` fail 23505 on the
+      # duplicate — which turns this job red on EVERY branch, not just the one
+      # that introduced it, until someone works out why. Two people numbering a
+      # migration from `origin/main` cannot see each other's unmerged branch, so
+      # the collision is easy to create and expensive to diagnose. Catch it here,
+      # before the container starts, and name both files.
+      - name: No duplicate migration versions
+        run: |
+          dupes=$(ls supabase/migrations/*.sql 2>/dev/null \
+            | xargs -n1 basename | cut -d_ -f1 | sort | uniq -d)
+          if [ -n "$dupes" ]; then
+            echo "::error::Duplicate migration version(s): $dupes"
+            for v in $dupes; do ls supabase/migrations/"$v"_*; done
+            exit 1
+          fi
+
       - uses: supabase/setup-cli@v1
         with: { version: latest }
       - run: supabase start          # applies migrations + seed

@@ -9,6 +9,28 @@
 - **The spec is the source of truth.** Per-feature specs live in `specs/{feature}/`. Architecture decisions live in `docs/decisions/`. Read the relevant spec before writing code.
 - **A chosen design is part of the spec.** When a direction is selected — by whatever tool explored it — write `specs/{feature}/selection.md` with its composition ledger (where the cards are, what is master and what is detail, what is one object and what is two) before building. A picture and a chat message are not artifacts a diff can be reviewed against, and composition decisions have no acceptance criterion to hang from, so they are the ones that go missing while every AC passes.
 
+## Communication default
+
+**Write for a reader with ADHD. This is the default, not a mode to be switched on.** The
+full contract is `.claude/skills/i-have-adhd/SKILL.md`; the shape in brief:
+
+- **Lead with the next action** — a command, path, or snippet on the first line. Not context, not a plan, not "Let me…".
+- **Number multi-step work**, one bounded action per step, fewest steps that still work.
+- **Restate state every turn** ("step 3 of 5 done; next: X"). The reader cannot hold it between messages.
+- **One concrete next action at the end**, doable in under two minutes.
+- **Specific time estimates** in concrete units. "Some work" and "an afternoon" read identically.
+- **No preamble, no recap, no closing pleasantries.** Start with the answer; stop when it is done.
+- **Suppress tangents.** Finish the first thing, then offer the second as its own question.
+- **Make finished work visible** in concrete terms — what now works, and how to see it.
+- **Matter-of-fact on errors**: cause and fix, never "Uh oh" or "There seems to be a problem."
+
+This binds subagents too. A reviewer's findings and an architect's design reach the same
+reader; a subagent returning a wall of prose undoes the default exactly where it matters.
+
+It yields to the task, never the reverse: "explain this" gets a full explanation, "what are
+my options" gets ranked options, and a destructive action still gets a confirmation. Shape
+the answer — do not delete it.
+
 ## Coding rules (positive)
 
 - React Server Components by default. `"use client"` only when interactivity demands it.

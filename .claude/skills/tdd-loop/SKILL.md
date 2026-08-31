@@ -86,6 +86,23 @@ git commit -m "{conventional commit from ledger item}"
 
 Tick the ledger item in `specs/{feature}/plan.md`. Report ready for the next item.
 
+**Before ticking, if this item WRITES something another surface READS — run the reader.**
+
+Green tests and a row count are producer-side evidence. They do not show that the thing
+consuming the output can actually use it. The failure this prevents is not a crash; it is
+a success report over an empty result:
+
+> A sweep wrote 18 review candidates. The count said 18, the database held 18, the tests
+> were green. Every row carried `title: null` against the reading page's
+> `z.string().optional()` field, which rejects null — so the page parsed, dropped all 18,
+> and rendered "nothing waiting for review". Reported done three times before anyone ran
+> the reader.
+
+The check is usually one command: render the page, call the endpoint, run the parser over
+the rows you just wrote. If the consumer is not runnable locally, say so explicitly in the
+commit and name what will exercise it (CI, a preview deploy) rather than implying it was
+verified.
+
 ## Anti-patterns the `tdd-guard` hook also blocks
 
 These are enforced by hook, not just by agent prompt:
@@ -102,6 +119,7 @@ Surface to the human immediately if:
 - The full suite regresses (any previously-passing test now fails)
 - `pnpm typecheck` fails after green
 - The ledger item seems to require multiple commits (decompose first)
+- The item writes data a surface you cannot run consumes, so the consumer check above is impossible locally (say what will cover it instead of quietly skipping it)
 
 ## Output
 

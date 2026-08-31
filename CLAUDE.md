@@ -15,6 +15,14 @@ Build **{{PRODUCT_NAME}}** — {{one line: what it is, who it's for, why it exis
 
 Next.js 15 App Router · Supabase (Postgres + Auth + Storage) · Vercel · Resend · Tailwind · shadcn/ui · TypeScript strict · pnpm · Vitest · Playwright.
 
+## Communication default
+
+Write for a reader with ADHD — on by default, in the main conversation and in every
+subagent. Lead with the next action, number multi-step work, restate progress each turn,
+no preamble or closing pleasantries, specific time estimates. Full contract:
+`.claude/skills/i-have-adhd/SKILL.md`; cross-tool summary in `AGENTS.md`. Turn off only on
+"stop adhd mode"; `/i-have-adhd` restores it.
+
 ## Standing Rules (positive form)
 
 - Use React Server Components by default; add `"use client"` only when interactivity demands it.
@@ -30,6 +38,9 @@ Next.js 15 App Router · Supabase (Postgres + Auth + Storage) · Vercel · Resen
 - For sensitive or regulated fields (PII, PHI, financial, secrets): never in logs, URLs, error messages, or analytics.
 - Run subagents concurrently when work is independent: fan out read-only agents in parallel, isolate every concurrent writer in its own git worktree, serialize only true data dependencies (e.g. the TDD phases). See PLAN.md "Concurrency posture."
 - Push every commit to the feature branch's remote. Never `git push` to `main` or `master` — main updates only via PR. Never force-push.
+- Verify the CONSUMER, not the producer, before reporting work done. "N rows written" is not evidence that anything reads them. When a writer feeds a reader — a queue and the page that renders it, an API and its client, a file and its parser — run the reader against real output before you say it works.
+- Make a dual-mode seam (fixture/live, mock/real, sandbox/prod) FAIL LOUD when it is pointed at production with the live flag unset. Falling back to canned data is right locally and catastrophic against prod: the run reports success on fabricated data, and nothing downstream can tell.
+- Never discard data behind a count-only log. A `safeParse`-and-drop or catch-and-continue loop that silently withholds rows must surface the loss where the affected human will see it — otherwise the system reports success while delivering nothing.
 - Keep CI lean — run only what you'd act on: trigger on PRs to `main` (not every push), cancel superseded runs, gate expensive jobs (real-DB, e2e) behind the fast checks, set timeouts. Don't pay Actions minutes for tests nobody acts on. Template: `.claude/templates/ci.yml`.
 
 ## Workflow
