@@ -94,6 +94,22 @@ jobs:
 
       # Every spec that needs no infrastructure, fully parallel.
       # `test:fast` is defined by templates/vitest.fast.config.ts.
+      #
+      # ONCE THIS PASSES ~2 MINUTES, SHARD IT. A GitHub runner has 2 cores; a
+      # dev laptop has 8-16, so a suite that feels instant locally can take ten
+      # minutes here — mostly per-file environment setup, which divides cleanly.
+      # Add `strategy: { fail-fast: false, matrix: { shard: [1,2,3,4] } }`, name
+      # the job `Fast shard ${{ matrix.shard }}`, and add a tiny aggregator job
+      # named `Fast tests` with `needs: [fast]`, `if: always()`, that fails
+      # unless `needs.fast.result == 'success'` — so the branch rule still has
+      # ONE stable name to require. Wall time drops ~4x for roughly the same
+      # billed minutes.
+      #
+      # ⚠️ When you do, DO NOT write `pnpm test:fast -- --shard=1/4`. pnpm
+      # swallows the `--`, vitest never sees the flag, and every shard silently
+      # runs the WHOLE suite — four times the work, no speedup, and four green
+      # checks indistinguishable from a working split. Call the runner directly:
+      #   pnpm exec vitest run --config vitest.fast.config.ts --shard=1/4
       - name: Run fast tests
         if: steps.scope.outputs.code == 'true'
         run: pnpm test:fast
