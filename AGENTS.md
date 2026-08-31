@@ -52,6 +52,17 @@ the answer — do not delete it.
 - Never modify a test to make it pass. Fix the code, or fix the test for the right reason, never both at once.
 - Integration tests use a real local Supabase. RLS policies get their own tests.
 - E2E tests target the Vercel preview URL, not localhost.
+- **A gated-off suite must be gated ON somewhere real.** `describe.skip` and env flags keep a not-yet-runnable suite from training people to ignore red CI — but if no workflow ever *sets* the flag, the suite is collected, skipped, reported green, and inert forever. Set it in a scheduled job, and read the skip count: "48 skipped" is not passing, it is absent.
+- **Migration post-conditions assert size-independent invariants.** CI applies migrations to a FRESH, unseeded database, so `count(*) <> 10` — a number measured on production — raises there and takes `supabase start` down with it, killing every job that needed a database. Assert the rows you targeted, not the corpus.
+
+## CI rules
+
+- **The gate runs everything that needs no infrastructure — not a directory.** Tests are co-located here, so a required check pointed at `tests/unit` covers almost nothing by construction. Route specs by what each file actually reaches for: `.claude/templates/vitest.route.ts`.
+- **Serialize only the tests that need it.** `fileParallelism: false` is a global switch; set for the few suites sharing one database, it silently taxes every pure test in the repo.
+- **One trigger per commit.** `on: push` for all branches *plus* `on: pull_request` runs the whole matrix twice for every commit on an open PR. Always set `concurrency` with `cancel-in-progress`.
+- **Never `paths-ignore` a required check.** The job must always run and always report; skip the expensive part in a *step*. A required check that never reports blocks the PR forever.
+- **An advisory job is pure cost.** If it cannot block a merge, it cannot protect anything — make it required, move it off the PR path, or delete it. Same for a nightly nobody reads.
+- Audit with `/ci-audit` when CI feels slow or expensive — and once after adopting the starter, since templates only reach *new* repos and every adopted one drifts.
 
 ## Context hygiene
 

@@ -1,0 +1,147 @@
+# saucestack nightly — the slow half of CI, off the pull-request path.
+# Copy to .github/workflows/nightly.yml. Companion to templates/ci.yml.
+#
+# WHY THESE ARE NOT ON THE PR PATH. In the repo this template was written from,
+# the database and Playwright jobs were 91% of all Actions minutes and neither
+# could block a merge. They had also been red for weeks — a migration asserted a
+# production row count, so `supabase start` exited 1 and both jobs died before
+# running a test. Red was the normal state, so red carried no information.
+#
+# Nightly is where a check belongs when you want to KNOW but do not want to WAIT.
+#
+# ⚠️ A NIGHTLY JOB NOBODY READS IS WORSE THAN NO JOB. It is green-by-default and
+# invisible. Wire failures to somewhere you actually look — the
+# `open-an-issue-on-failure` step at the bottom is the cheapest version. If you
+# will not do that, delete the job instead of pretending it is a safety net.
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write # so a failure becomes a thing with an assignee
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      # Your build already typechecks this on every preview deploy. This is the
+      # backstop for the day the provider is down or the build config changes.
+      - run: pnpm typecheck
+
+  database:
+    name: Database tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ALLOW_DESTRUCTIVE_DB_TESTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - run: supabase start
+      - run: pnpm test:db
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+
+      # Cache the browser binary instead of re-downloading it every run.
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - run: pnpm exec playwright install --with-deps chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+      - run: pnpm exec playwright install-deps chromium
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+
+      # ⚠️ THE GATED-SKIP TRAP — the most expensive thing in this file.
+      #
+      # saucestack tells you to gate a not-yet-runnable e2e suite behind
+      # `describe.skip` or an env flag rather than throwing, so a missing fixture
+      # cannot train people to ignore red CI. That rule is right and it has a
+      # failure mode: if CI never SETS the flag, the suite is collected, skipped,
+      # reported green, and inert — forever. One audited repo spent ~290 seconds
+      # of setup per run to execute a single test, because 16 of 24 spec files
+      # gated on a variable no workflow ever set. It had never caught a
+      # regression in its life.
+      #
+      # So: set the flags here, and make sure they are the ones your specs read.
+      # Then check the run summary — a suite reporting "48 skipped" is not
+      # passing, it is absent.
+      - run: pnpm test:e2e
+        id: e2e
+        env:
+          PLAYWRIGHT_AUTHED: "1"
+          # Point at a real deployment when you have one — Vercel already built
+          # it, which saves a local build + stack boot.
+          PLAYWRIGHT_BASE_URL: ${{ vars.PREVIEW_URL }}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # A nightly failure has to land somewhere with an assignee, or it is a cron
+  # that silently stopped mattering. Updates one issue in place rather than
+  # filing 365 near-identical ones a year.
+  report:
+    name: Report failures
+    needs: [typecheck, database, e2e]
+    if: ${{ failure() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Nightly CI is failing';
+            const body = [
+              `Nightly run [${context.runId}](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) failed.`,
+              '',
+              'These jobs are deliberately off the pull-request path, so nothing',
+              'else will tell you. Either fix it or delete the job — a nightly',
+              'nobody acts on is green-by-default and invisible.',
+            ].join('\n');
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', labels: 'nightly-ci',
+            });
+            if (existing.data.length) {
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: existing.data[0].number, body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: ['nightly-ci'],
+              });
+            }
