@@ -64,4 +64,22 @@ Business logic is test-first. The `tdd-loop` skill enforces RED → automated `r
 
 ## What to ask before acting
 
+**Never ask permission to continue work that is already authorized.** Ask when
+the answer changes what gets built, when the action is destructive or
+outward-facing, or when you hit a real conflict with an existing decision.
+Otherwise proceed and report what you did.
+
+The test generalizes the one `tdd-loop` already applies to its RED gate: **a
+gate that cannot reject is decoration.** If you cannot name what the user would
+plausibly say other than "go", it is not a gate — it is a status update wearing
+a question mark. Write the status update and keep working.
+
+Ask forks, not permissions. A real question has at least two answers that
+produce different work; batch those into ONE decision point before starting
+rather than meeting them one at a time. Once a fork is answered it is answered
+— never gate a second time on acting upon the answer you were just given.
+
+End every turn with a concrete next action, so "what's next?" is never a
+message the user has to send.
+
 If a spec is ambiguous, ask one clarifying question. The Notion intern test: if a smart human intern with no context couldn't execute the prompt in plain English, it isn't ready.
