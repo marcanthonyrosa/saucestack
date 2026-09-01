@@ -26,6 +26,16 @@
             "description": "merged-branch-guard: block `git push` to a branch whose PR already merged (commits would be silently orphaned). Override with a trailing `# allow-merged-push`."
           }
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/migration-number-guard.sh\"",
+            "description": "migration-number-guard: refuse a migration version already taken on ANY remote branch, and name the next free one. Two files sharing a version breaks `supabase start`, which reddens every database job on every branch."
+          }
+        ]
       }
     ],
     "PostToolUse": [
